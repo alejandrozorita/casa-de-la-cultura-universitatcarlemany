@@ -1,66 +1,116 @@
-# 📚 Proyecto: La Casa de la Cultura
+# 📚 La Casa de la Cultura - Aplicación Web
 
-Este proyecto busca digitalizar el catálogo de libros de la Casa de la Cultura.  
-La idea es crear una herramienta sencilla para registrar, consultar y gestionar libros, usuarios y valoraciones.
+Aplicación web simple en Flask para consultar el catálogo de libros de la Casa de la Cultura.
 
----
+## 🎯 Requisitos
 
-## 📁 Estructura del repositorio
+- Python 3.8 o superior
+- Base de datos `library.db` (SQLite)
 
-proyecto-cultura/
-├── database/         → Base de datos, CSV y scripts de carga
-├── app/              → Aplicación principal (Flask o similar)
-├── etl/              → Flujos o scripts para procesar y cargar los datos (KNIME o Python)
-└── README.md         → Este archivo
+## 📦 Instalación
 
+1. Clona el repositorio y navega a la carpeta del proyecto:
 
----
+```bash
+cd casa-de-la-cultura-universitatcarlemany
+```
 
-## 🧩 Qué hace cada parte
+2. Crea un entorno virtual (recomendado):
 
-- **database/**  
-  Aquí guardamos los archivos `.csv` (libros, usuarios, ejemplares, valoraciones) y los scripts de carga.  
-  Puede incluir el `schema.sql` con la estructura de tablas o un flujo de KNIME si se hace el ETL visual.
+```bash
+python -m venv venv
+```
 
-- **app/**  
-  Contiene la aplicación. Por ahora puede ser un prototipo en Flask o el entorno que elijamos.  
-  Aquí estarán los archivos principales, las vistas (HTML) y la lógica básica.
+3. Activa el entorno virtual:
 
-- **etl/**  
-  Contiene el flujo ETL (Extract, Transform, Load).  
-  Aquí van los ficheros de KNIME o los scripts en Python que preparan los datos antes de cargarlos a la base de datos.  
-  La idea es que todos puedan entender cómo se procesan los CSV y cómo llegan limpios a las tablas.
+- En Windows:
+```bash
+venv\Scripts\activate
+```
 
+- En macOS/Linux:
+```bash
+source venv/bin/activate
+```
 
----
+4. Instala las dependencias:
 
-## ⚙️ Cómo trabajaremos
+```bash
+pip install -r requirements.txt
+```
 
-1. Cada persona puede montar el entorno localmente (Python o KNIME).  
-2. Los CSV se mantienen en `/database`.  
-3. Los flujos o scripts ETL se guardan en `/etl`.  
-4. El documento técnico y los avances se guardan en `/docs`.  
-5. Los cambios importantes se suben al repositorio con un mensaje claro en el commit.
+## 🗃️ Base de datos
 
----
+**IMPORTANTE:** Este proyecto NO genera la base de datos. Necesitas colocar el archivo `library.db` en la raíz del proyecto.
 
-## 💡 Objetivo del repositorio
+```
+casa-de-la-cultura-universitatcarlemany/
+├── app/
+├── library.db  ← Debe estar aquí
+├── requirements.txt
+└── README.md
+```
 
-Dejar una base clara y ordenada del proyecto:  
-- Datos → `/database`  
-- ETL → `/etl`  
-- Aplicación → `/app`  
-- Documentación → `/docs`  
+La base de datos se genera desde un proceso ETL externo (KNIME). Debe contener al menos la tabla `books` con las columnas:
+- `id`
+- `title`
+- `author`
+- `category`
 
-Así todos podemos trabajar de forma sincronizada y sin duplicar esfuerzos.
-  
----
+Opcionalmente puede tener las tablas `copies` y `ratings` para mostrar información adicional.
 
-## 👥 Equipo de trabajo
+## ▶️ Ejecución
 
-- Gustavo Adolfo Aguilar Ruiz  
-- María de la Concepción Marcos Ramos  
-- Alfred Segués Oliva  
-- Alejandro Zorita  
+1. Asegúrate de que el entorno virtual está activado.
 
----
+2. Ejecuta la aplicación:
+
+```bash
+python app/app.py
+```
+
+3. Abre tu navegador en: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+## 🔍 Funcionalidades
+
+- **Página principal (/)**: Lista todos los libros del catálogo
+- **Búsqueda (/search?q=...)**: Busca libros por título o autor
+- **Detalle (/book/id)**: Muestra información detallada de un libro
+
+## 🛠️ Solución de problemas
+
+### "No se encontraron libros"
+- Verifica que `library.db` está en la raíz del proyecto
+- Asegúrate de que la base de datos tiene la tabla `books` con datos
+
+### Error al iniciar la aplicación
+- Comprueba que las dependencias están instaladas: `pip list`
+- Verifica que estás ejecutando desde la carpeta correcta
+
+### Columnas faltantes
+Si algunas columnas no existen en tu base de datos, la aplicación seguirá funcionando mostrando valores por defecto ("Sin título", "Desconocido", etc.).
+
+## 📁 Estructura del proyecto
+
+```
+casa-de-la-cultura-universitatcarlemany/
+├── app/
+│   ├── __init__.py
+│   ├── app.py              # Aplicación Flask y rutas
+│   ├── models.py           # Conexión y consultas a la BD
+│   ├── templates/          # Plantillas HTML
+│   │   ├── base.html
+│   │   ├── home.html
+│   │   └── detail.html
+│   └── static/             # Archivos estáticos (vacío)
+├── library.db              # Base de datos (no incluida)
+├── requirements.txt        # Dependencias
+└── README.md              # Este archivo
+```
+
+## 👥 Equipo
+
+- Gustavo Adolfo Aguilar Ruiz
+- María de la Concepción Marcos Ramos
+- Alfred Segués Oliva
+- Alejandro Zorita

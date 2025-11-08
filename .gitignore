@@ -22,6 +22,9 @@ instance/
 .DS_Store
 Thumbs.db
 
+# Variables de entorno
+.env
+
 # Base de datos (si quieres excluirla)
 # library.db
 

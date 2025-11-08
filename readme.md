@@ -41,25 +41,25 @@ pip install -r requirements.txt
 
 ## 🗃️ Base de datos
 
-**IMPORTANTE:** Este proyecto NO genera la base de datos. Necesitas colocar el archivo `library.db` en la raíz del proyecto.
+El proyecto soporta dos tipos de bases de datos:
 
-```
-casa-de-la-cultura-universitatcarlemany/
-├── app/
-├── library.db  ← Debe estar aquí
-├── requirements.txt
-└── README.md
-```
+### PostgreSQL (Recomendado para producción)
+- Usa Docker Compose para levantar PostgreSQL automáticamente
+- El esquema está en `database/schema.sql`
 
-La base de datos se genera desde un proceso ETL externo (KNIME). Debe contener al menos la tabla `books` con las columnas:
-- `id`
-- `title`
-- `author`
-- `category`
+### SQLite (Para desarrollo local)
+- Si no se configura `DATABASE_URL`, usa SQLite por defecto
+- El archivo `library.db` debe estar en la raíz del proyecto
 
-Opcionalmente puede tener las tablas `copies` y `ratings` para mostrar información adicional.
+**Estructura de tablas requeridas:**
+- `books` (id, title, author, category)
+- `users` (id, name, email) - opcional
+- `copies` (id, book_id, status) - opcional
+- `ratings` (id, user_id, book_id, rating) - opcional
 
 ## ▶️ Ejecución
+
+### Opción 1: Ejecución local
 
 1. Asegúrate de que el entorno virtual está activado.
 
@@ -71,11 +71,79 @@ python app/app.py
 
 3. Abre tu navegador en: [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
+### Opción 2: Ejecución con Docker Compose (Recomendado)
+
+1. Levanta todos los servicios (PostgreSQL + App):
+
+```bash
+docker-compose up -d
+```
+
+2. Crea el esquema de base de datos:
+
+```bash
+docker exec -i casa-cultura-db psql -U library_user -d library < database/schema.sql
+```
+
+3. Abre tu navegador en: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+**Comandos útiles:**
+```bash
+# Ver logs
+docker-compose logs -f web
+
+# Parar los servicios
+docker-compose down
+
+# Parar y eliminar volúmenes (borra la BD)
+docker-compose down -v
+
+# Acceder a PostgreSQL
+docker exec -it casa-cultura-db psql -U library_user -d library
+```
+
+### Opción 3: Ejecución con Docker (sin Compose)
+
+1. Construye la imagen:
+
+```bash
+docker build -t casa-cultura .
+```
+
+2. Ejecuta el contenedor con SQLite:
+
+```bash
+docker run -p 5000:5000 -v $(pwd)/library.db:/app/library.db casa-cultura
+```
+
 ## 🔍 Funcionalidades
 
+### Aplicación Web
 - **Página principal (/)**: Lista todos los libros del catálogo
 - **Búsqueda (/search?q=...)**: Busca libros por título o autor
 - **Detalle (/book/id)**: Muestra información detallada de un libro
+
+### Sistema de Recomendación (Algoritmo Apriori)
+
+El proyecto incluye un módulo de recomendación de libros basado en el algoritmo Apriori que analiza patrones de valoraciones de usuarios.
+
+**Requisitos:**
+- Archivos CSV en la carpeta `database/`:
+  - `ratings.csv` (user_id, book_id, rating)
+  - `books.csv` (id, title)
+  - `user_info.csv` (id, nombre)
+
+**Ejecución:**
+```bash
+python app/recommendation.py
+```
+
+El sistema:
+1. Carga las valoraciones de usuarios
+2. Crea una matriz binaria (rating >= 4 = recomendación positiva)
+3. Aplica el algoritmo Apriori para encontrar libros frecuentemente valorados juntos
+4. Genera reglas de asociación con confianza mínima del 60%
+5. Recomienda libros basándose en estas asociaciones
 
 ## 🛠️ Solución de problemas
 
@@ -98,13 +166,19 @@ casa-de-la-cultura-universitatcarlemany/
 │   ├── __init__.py
 │   ├── app.py              # Aplicación Flask y rutas
 │   ├── models.py           # Conexión y consultas a la BD
+│   ├── recommendation.py   # Sistema de recomendación (Apriori)
 │   ├── templates/          # Plantillas HTML
 │   │   ├── base.html
 │   │   ├── home.html
 │   │   └── detail.html
 │   └── static/             # Archivos estáticos (vacío)
-├── library.db              # Base de datos (no incluida)
-├── requirements.txt        # Dependencias
+├── database/               # Archivos CSV y esquemas
+│   └── schema.sql          # Esquema PostgreSQL
+├── Dockerfile              # Configuración Docker
+├── docker-compose.yml      # Orquestación de servicios
+├── .dockerignore           # Archivos excluidos de Docker
+├── library.db              # Base de datos SQLite (opcional)
+├── requirements.txt        # Dependencias Python
 └── README.md              # Este archivo
 ```
 

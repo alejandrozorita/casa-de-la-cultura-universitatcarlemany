@@ -4,15 +4,25 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 def init_db(app):
-    """Inicializo la conexión a la base de datos"""
-    # Calculo la ruta de library.db desde la raíz del proyecto
-    base_dir = os.path.abspath(os.path.dirname(__file__))
-    db_path = os.path.join(base_dir, '..', 'library.db')
+    """Inicializo la conexión a la base de datos PostgreSQL"""
+    # Obtengo la URL de la base de datos desde variable de entorno
+    database_url = os.getenv('DATABASE_URL')
     
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    if not database_url:
+        raise ValueError(
+            "ERROR: Variable DATABASE_URL no configurada.\n"
+            "Debes configurar la URL de PostgreSQL en las variables de entorno.\n"
+            "Ejemplo: DATABASE_URL=postgresql+psycopg2://user:pass@localhost:5432/library"
+        )
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     db.init_app(app)
+    
+    # Muestro solo la parte relevante de la URL (sin credenciales)
+    db_info = database_url.split('@')[-1] if '@' in database_url else 'PostgreSQL'
+    print(f"✅ Base de datos PostgreSQL configurada: {db_info}")
 
 def list_books(q=None, limit=50):
     """
@@ -21,12 +31,12 @@ def list_books(q=None, limit=50):
     """
     try:
         if q:
-            # Busco en título o autor
+            # Busco en título o autor (ILIKE es case-insensitive en PostgreSQL)
             query = """
                 SELECT id, title, author, category 
                 FROM books 
-                WHERE title LIKE ? OR author LIKE ?
-                LIMIT ?
+                WHERE title ILIKE :title OR author ILIKE :author
+                LIMIT :limit
             """
             result = db.session.execute(
                 db.text(query), 
@@ -34,7 +44,7 @@ def list_books(q=None, limit=50):
             )
         else:
             # Devuelvo todos los libros
-            query = "SELECT id, title, author, category FROM books LIMIT ?"
+            query = "SELECT id, title, author, category FROM books LIMIT :limit"
             result = db.session.execute(db.text(query), {'limit': limit})
         
         books = []
@@ -59,7 +69,7 @@ def get_book(book_id):
     """
     try:
         # Obtengo info básica del libro
-        query = "SELECT id, title, author, category FROM books WHERE id = ?"
+        query = "SELECT id, title, author, category FROM books WHERE id = :id"
         result = db.session.execute(db.text(query), {'id': book_id})
         row = result.fetchone()
         
@@ -75,7 +85,7 @@ def get_book(book_id):
         
         # Intento contar copias
         try:
-            count_query = "SELECT COUNT(*) FROM copies WHERE book_id = ?"
+            count_query = "SELECT COUNT(*) FROM copies WHERE book_id = :book_id"
             count_result = db.session.execute(db.text(count_query), {'book_id': book_id})
             book['copies_count'] = count_result.fetchone()[0]
         except:
@@ -83,7 +93,7 @@ def get_book(book_id):
         
         # Intento calcular valoración media
         try:
-            rating_query = "SELECT AVG(rating) FROM ratings WHERE book_id = ?"
+            rating_query = "SELECT AVG(rating) FROM ratings WHERE book_id = :book_id"
             rating_result = db.session.execute(db.text(rating_query), {'book_id': book_id})
             avg_rating = rating_result.fetchone()[0]
             book['avg_rating'] = round(avg_rating, 1) if avg_rating else None

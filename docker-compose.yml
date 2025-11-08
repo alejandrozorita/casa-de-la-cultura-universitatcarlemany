@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: casa-cultura-db
+    environment:
+      POSTGRES_DB: library
+      POSTGRES_USER: library_user
+      POSTGRES_PASSWORD: library_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U library_user -d library"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: casa-cultura-web
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://library_user:library_pass@db:5432/library
+      FLASK_DEBUG: "false"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./database:/app/database
+
+volumes:
+  postgres_data:
+

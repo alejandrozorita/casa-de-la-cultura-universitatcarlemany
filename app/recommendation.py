@@ -13,16 +13,38 @@ def load_data():
     Cargo los datos desde los archivos CSV.
     Devuelvo tres DataFrames: ratings, books y user_info.
     """
+    # Primero verifico que existan los archivos
+    missing_files = []
+    if not os.path.exists(RATINGS_FILE):
+        missing_files.append(f"ratings.csv en {RATINGS_FILE}")
+    if not os.path.exists(BOOKS_FILE):
+        missing_files.append(f"books.csv en {BOOKS_FILE}")
+    if not os.path.exists(USER_INFO_FILE):
+        missing_files.append(f"user_info.csv en {USER_INFO_FILE}")
+    
+    if missing_files:
+        print("=" * 60)
+        print("ERROR: Archivos CSV faltantes")
+        print("=" * 60)
+        for file in missing_files:
+            print(f"  ❌ No se encontró: {file}")
+        print("\nAsegúrate de tener estos archivos en la carpeta /database:")
+        print("  - ratings.csv (user_id, book_id, rating)")
+        print("  - books.csv (id, title)")
+        print("  - user_info.csv (id, nombre)")
+        print("=" * 60)
+        return None, None, None
+    
     try:
         ratings = pd.read_csv(RATINGS_FILE)
         books = pd.read_csv(BOOKS_FILE)
         user_info = pd.read_csv(USER_INFO_FILE)
         
-        print(f"Datos cargados: {len(ratings)} valoraciones, {len(books)} libros, {len(user_info)} usuarios")
+        print(f"✅ Datos cargados: {len(ratings)} valoraciones, {len(books)} libros, {len(user_info)} usuarios")
         return ratings, books, user_info
     
-    except FileNotFoundError as e:
-        print(f"Error: No se encontró el archivo CSV. {e}")
+    except Exception as e:
+        print(f"Error al cargar los datos: {e}")
         return None, None, None
 
 def create_user_book_matrix(ratings_df):

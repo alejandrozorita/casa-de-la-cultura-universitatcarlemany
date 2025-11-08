@@ -35,7 +35,14 @@ def not_found(error):
     return '<h1>404 - Libro no encontrado</h1><a href="/">Volver al inicio</a>', 404
 
 if __name__ == '__main__':
+    import os
+    
+    # Leo el modo debug desde variable de entorno (por defecto False en producción)
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    
     print("Iniciando La Casa de la Cultura...")
+    print(f"Modo debug: {'activado' if debug_mode else 'desactivado'}")
     print("Accede a: http://127.0.0.1:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
 

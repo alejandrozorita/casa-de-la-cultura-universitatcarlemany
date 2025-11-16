@@ -221,33 +221,18 @@ def get_recent_books(page=1, per_page=20):
 
 def get_top_rated(page=1, per_page=20):
     """
-    Libros más valorados con paginación
+    Libros más valorados usando vista materializada (instantáneo)
     """
     try:
         offset = (page - 1) * per_page
         
+        # Query súper rápida usando la vista materializada
         query = """
-            SELECT b.book_id, b.title, b.authors, AVG(r.rating) as avg_rating, COUNT(r.rating) as num_ratings
-            FROM books b
-            JOIN copies c ON b.book_id = c.book_id
-            JOIN ratings r ON c.copy_id = r.copy_id
-            GROUP BY b.book_id, b.title, b.authors
-            HAVING COUNT(r.rating) > 10
-            ORDER BY avg_rating DESC, num_ratings DESC
+            SELECT book_id, title, authors, avg_rating, num_ratings
+            FROM mv_top_rated_books
             LIMIT :limit OFFSET :offset
         """
         result = db.session.execute(db.text(query), {'limit': per_page, 'offset': offset})
-        
-        count_query = """
-            SELECT COUNT(DISTINCT b.book_id)
-            FROM books b
-            JOIN copies c ON b.book_id = c.book_id
-            JOIN ratings r ON c.copy_id = r.copy_id
-            GROUP BY b.book_id
-            HAVING COUNT(r.rating) > 10
-        """
-        count_result = db.session.execute(db.text(count_query))
-        total = len(count_result.fetchall())
         
         books = []
         for row in result:
@@ -258,6 +243,11 @@ def get_top_rated(page=1, per_page=20):
                 'category': f"⭐ {round(row[3], 1)}/5",
                 'rating_count': row[4]
             })
+        
+        # Cuento el total (también rápido porque lee de la vista)
+        count_query = "SELECT COUNT(*) FROM mv_top_rated_books"
+        count_result = db.session.execute(db.text(count_query))
+        total = count_result.fetchone()[0]
         
         total_pages = (total + per_page - 1) // per_page
         

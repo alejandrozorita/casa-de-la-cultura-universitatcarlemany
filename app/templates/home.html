@@ -1,32 +1,63 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Catálogo de libros</h2>
+<h2>{{ page_title or "Catálogo de libros" }}</h2>
 
-<!-- Buscador -->
+<!-- Navegación -->
+<div style="margin-bottom: 20px; padding: 10px; background-color: #ecf0f1; border-radius: 3px;">
+    <a href="/" style="margin-right: 15px;">🏠 Inicio</a>
+    <a href="/top-rated" style="margin-right: 15px;">⭐ Más valorados</a>
+    <a href="/search" style="margin-right: 15px;">📚 Ver todos</a>
+</div>
+
+<!-- Buscador y filtros -->
 <form action="/search" method="get" style="margin-bottom: 20px;">
-    <input type="text" name="q" placeholder="Buscar por título o autor..." 
-           value="{{ search_query or '' }}" 
-           style="padding: 10px; width: 70%; border: 1px solid #ddd; border-radius: 3px;">
-    <button type="submit" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">
-        Buscar
-    </button>
-    <a href="/" style="margin-left: 10px;">Limpiar</a>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <input type="text" name="q" placeholder="Buscar por título o autor..." 
+               value="{{ search_query or '' }}" 
+               style="flex: 1; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
+        
+        <select name="category" style="padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
+            <option value="">Todos los idiomas</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            🔍 Buscar
+        </button>
+        
+        <a href="/" style="padding: 10px 15px; background-color: #95a5a6; color: white; border-radius: 3px; display: inline-block; text-decoration: none;">
+            Limpiar
+        </a>
+    </div>
 </form>
 
-{% if search_query %}
-<p><em>Resultados para: "{{ search_query }}"</em></p>
+{% if search_query or selected_category %}
+<p style="color: #7f8c8d; font-style: italic; margin-bottom: 15px;">
+    {% if search_query %}Búsqueda: "{{ search_query }}"{% endif %}
+    {% if selected_category %}Idioma: {{ selected_category }}{% endif %}
+</p>
 {% endif %}
 
 <!-- Listado de libros -->
 {% if books %}
+{% if pagination %}
+<p style="margin-bottom: 15px; color: #7f8c8d;">
+    Mostrando {{ books|length }} libros (página {{ pagination.page }} de {{ pagination.total_pages }}, total: {{ pagination.total }})
+</p>
+{% else %}
+<p style="margin-bottom: 15px; color: #7f8c8d;">Mostrando {{ books|length }} libros</p>
+{% endif %}
+
 <table style="width: 100%; border-collapse: collapse;">
     <thead>
         <tr style="background-color: #ecf0f1;">
             <th style="padding: 10px; text-align: left; border-bottom: 2px solid #bdc3c7;">ID</th>
             <th style="padding: 10px; text-align: left; border-bottom: 2px solid #bdc3c7;">Título</th>
             <th style="padding: 10px; text-align: left; border-bottom: 2px solid #bdc3c7;">Autor</th>
-            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #bdc3c7;">Categoría</th>
+            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #bdc3c7;">Idioma/Valoración</th>
         </tr>
     </thead>
     <tbody>
@@ -34,7 +65,7 @@
         <tr style="border-bottom: 1px solid #ecf0f1;">
             <td style="padding: 10px;">{{ book.id }}</td>
             <td style="padding: 10px;">
-                <a href="/book/{{ book.id }}">{{ book.title }}</a>
+                <a href="/book/{{ book.id }}" style="font-weight: bold;">{{ book.title }}</a>
             </td>
             <td style="padding: 10px;">{{ book.author }}</td>
             <td style="padding: 10px;">{{ book.category }}</td>
@@ -42,8 +73,64 @@
         {% endfor %}
     </tbody>
 </table>
+
+<!-- Paginación -->
+{% if pagination and pagination.total_pages > 1 %}
+<div style="margin-top: 30px; padding: 20px; text-align: center; background-color: #ecf0f1; border-radius: 5px;">
+    {% set base_url = url_for(current_route) %}
+    {% set query_params = [] %}
+    {% if search_query %}{% set _ = query_params.append('q=' + search_query) %}{% endif %}
+    {% if selected_category %}{% set _ = query_params.append('category=' + selected_category) %}{% endif %}
+    {% set query_string = '&'.join(query_params) %}
+    
+    {% if pagination.has_prev %}
+    <a href="{{ base_url }}?page=1{% if query_string %}&{{ query_string }}{% endif %}" 
+       style="padding: 8px 12px; margin: 0 5px; background-color: white; border: 1px solid #bdc3c7; border-radius: 3px; text-decoration: none; color: #2c3e50;">
+        « Primera
+    </a>
+    <a href="{{ base_url }}?page={{ pagination.page - 1 }}{% if query_string %}&{{ query_string }}{% endif %}" 
+       style="padding: 8px 12px; margin: 0 5px; background-color: white; border: 1px solid #bdc3c7; border-radius: 3px; text-decoration: none; color: #2c3e50;">
+        ‹ Anterior
+    </a>
+    {% else %}
+    <span style="padding: 8px 12px; margin: 0 5px; background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 3px; color: #95a5a6;">
+        « Primera
+    </span>
+    <span style="padding: 8px 12px; margin: 0 5px; background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 3px; color: #95a5a6;">
+        ‹ Anterior
+    </span>
+    {% endif %}
+    
+    <span style="padding: 8px 15px; margin: 0 10px; font-weight: bold; color: #2c3e50;">
+        Página {{ pagination.page }} / {{ pagination.total_pages }}
+    </span>
+    
+    {% if pagination.has_next %}
+    <a href="{{ base_url }}?page={{ pagination.page + 1 }}{% if query_string %}&{{ query_string }}{% endif %}" 
+       style="padding: 8px 12px; margin: 0 5px; background-color: white; border: 1px solid #bdc3c7; border-radius: 3px; text-decoration: none; color: #2c3e50;">
+        Siguiente ›
+    </a>
+    <a href="{{ base_url }}?page={{ pagination.total_pages }}{% if query_string %}&{{ query_string }}{% endif %}" 
+       style="padding: 8px 12px; margin: 0 5px; background-color: white; border: 1px solid #bdc3c7; border-radius: 3px; text-decoration: none; color: #2c3e50;">
+        Última »
+    </a>
+    {% else %}
+    <span style="padding: 8px 12px; margin: 0 5px; background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 3px; color: #95a5a6;">
+        Siguiente ›
+    </span>
+    <span style="padding: 8px 12px; margin: 0 5px; background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 3px; color: #95a5a6;">
+        Última »
+    </span>
+    {% endif %}
+</div>
+{% endif %}
+
 {% else %}
-<p>No se encontraron libros.</p>
+<div style="padding: 40px; text-align: center; background-color: #ecf0f1; border-radius: 5px;">
+    <p style="font-size: 18px; color: #7f8c8d;">📚 No se encontraron libros</p>
+    <a href="/" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background-color: #3498db; color: white; border-radius: 3px; text-decoration: none;">
+        Ver catálogo completo
+    </a>
+</div>
 {% endif %}
 {% endblock %}
-

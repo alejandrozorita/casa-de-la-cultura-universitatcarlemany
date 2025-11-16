@@ -1,26 +1,95 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Detalle del libro</h2>
-
-<div style="background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
-    <h3>{{ book.title }}</h3>
-    
-    <p><strong>ID:</strong> {{ book.id }}</p>
-    <p><strong>Autor:</strong> {{ book.author }}</p>
-    <p><strong>Categoría:</strong> {{ book.category }}</p>
-    
-    {% if book.copies_count is defined %}
-    <p><strong>Ejemplares disponibles:</strong> {{ book.copies_count }}</p>
-    {% endif %}
-    
-    {% if book.avg_rating %}
-    <p><strong>Valoración media:</strong> ⭐ {{ book.avg_rating }} / 5</p>
-    {% endif %}
-</div>
-
-<a href="/" style="padding: 10px 20px; background-color: #95a5a6; color: white; border-radius: 3px; display: inline-block;">
+<a href="/" style="display: inline-block; margin-bottom: 20px; padding: 8px 15px; background-color: #95a5a6; color: white; border-radius: 3px; text-decoration: none;">
     ← Volver al catálogo
 </a>
-{% endblock %}
 
+<div style="display: grid; grid-template-columns: 200px 1fr; gap: 20px; margin-bottom: 30px;">
+    <!-- Portada -->
+    <div>
+        {% if book.image_url %}
+        <img src="{{ book.image_url }}" alt="{{ book.title }}" style="width: 100%; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        {% else %}
+        <div style="width: 100%; height: 280px; background-color: #ecf0f1; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #7f8c8d;">
+            📚<br>Sin portada
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Info del libro -->
+    <div>
+        <h2 style="margin-top: 0; color: #2c3e50;">{{ book.title }}</h2>
+        
+        <div style="background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+            <p><strong>Autor:</strong> {{ book.author }}</p>
+            <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+            {% if book.year %}
+            <p><strong>Año:</strong> {{ book.year }}</p>
+            {% endif %}
+            <p><strong>Idioma:</strong> {{ book.language }}</p>
+            
+            {% if book.avg_rating %}
+            <p><strong>Valoración:</strong> ⭐ {{ book.avg_rating }} / 5 ({{ book.rating_count }} valoraciones)</p>
+            {% endif %}
+        </div>
+        
+        <!-- Disponibilidad -->
+        <h3 style="color: #2c3e50;">📦 Disponibilidad de ejemplares ({{ book.copies_count }})</h3>
+        {% if book.copies %}
+        <div style="background-color: #e8f8f5; padding: 15px; border-radius: 5px; border-left: 4px solid #27ae60;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #d5f4e6;">
+                        <th style="padding: 8px; text-align: left;">Ejemplar</th>
+                        <th style="padding: 8px; text-align: left;">Estado</th>
+                        <th style="padding: 8px; text-align: left;">Ubicación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for copy in book.copies %}
+                    <tr style="border-bottom: 1px solid #d5f4e6;">
+                        <td style="padding: 8px;">#{{ copy.id }}</td>
+                        <td style="padding: 8px;">
+                            {% if copy.status == 'available' %}
+                            <span style="color: #27ae60; font-weight: bold;">✓ Disponible</span>
+                            {% elif copy.status == 'en uso' %}
+                            <span style="color: #e67e22;">● En uso</span>
+                            {% elif copy.status == 'baja' %}
+                            <span style="color: #e74c3c;">✗ Baja</span>
+                            {% else %}
+                            <span style="color: #95a5a6;">{{ copy.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 8px;">{{ copy.location }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 5px;">
+            ⚠️ No hay ejemplares disponibles actualmente
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recomendaciones -->
+{% if recommendations %}
+<div style="margin-top: 40px; padding: 20px; background-color: #fff9e6; border-radius: 5px; border-left: 4px solid #f39c12;">
+    <h3 style="margin-top: 0; color: #2c3e50;">💡 También te puede interesar...</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+        {% for rec in recommendations %}
+        <div style="background-color: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <a href="/book/{{ rec.id }}" style="text-decoration: none; color: #2c3e50;">
+                <p style="font-weight: bold; margin: 0 0 5px 0;">{{ rec.title }}</p>
+                <p style="margin: 0; color: #7f8c8d; font-size: 14px;">{{ rec.author }}</p>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
